@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sales overview</title>
+  <style>
+    :root{--ink:#182a31;--muted:#60747d;--green:#137866;--line:#dce5e8;--paper:#f4f7f8}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    .top{background:#112d34;color:#fff}.nav{max-width:1280px;margin:auto;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{font-weight:700;letter-spacing:.02em;display:flex;align-items:center;gap:10px}.mark{background:#74dfc3;color:#14352f;border-radius:9px;padding:5px 10px}.nav-label{font-size:12px;color:#bdd2d8}
+    main{max-width:1280px;margin:auto;padding:38px 32px 24px}.eyebrow{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--green);text-transform:uppercase}
+    h1{font-size:36px;letter-spacing:-.035em;margin:8px 0 10px}p{color:var(--muted);line-height:1.6;margin:0}.heading{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:28px}
+    .button{background:var(--green);color:white;border:0;border-radius:8px;padding:12px 18px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}.button:hover{background:#0c6555}.button:disabled{opacity:.65}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}.stat{padding:20px 24px;background:white;border:1px solid var(--line);border-radius:12px}.label{color:var(--muted);font-size:12px;font-weight:500}.value{display:block;font-size:27px;letter-spacing:-.02em;font-weight:700;margin:8px 0 4px}.sub{font-size:12px;color:var(--muted)}
+    .status{font-size:21px;color:var(--green)}.status.bad{color:#a34527}.panel{background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}.toolbar{padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line)}h2{font-size:17px;margin:0 0 5px}.table-name{font:12px ui-monospace,monospace;color:var(--muted)}
+    .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}input,select{font-family:inherit;font-size:14px;color:var(--ink);background:#fff;border:1px solid #cfdbdf;border-radius:7px;padding:10px 12px}input{width:240px}input:focus,select:focus{outline:2px solid #68bfa9;outline-offset:1px}.control-label{font-size:12px;color:var(--muted)}
+    .table-scroll{overflow:auto;max-height:560px}table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}th{position:sticky;top:0;background:#edf4f4;color:#48646d;font-size:11px;letter-spacing:.03em;z-index:1}td,th{padding:15px 20px;border-bottom:1px solid #edf1f3;vertical-align:top}td{max-width:420px;overflow-wrap:anywhere;white-space:pre-wrap}tbody tr:hover{background:#f7fbfa}.null{color:#91a0a7;font-style:italic}.empty{text-align:center;padding:50px 24px}.empty h2{margin-bottom:8px}.error{background:#fff5ed;border:1px solid #f2d7c4;border-radius:10px;padding:18px 22px;margin-bottom:22px}.error strong{color:#994b2b}.error p{color:#7e5b49;margin-top:7px}.table-foot{padding:14px 24px;display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);background:#fcfdfd}.footer{display:flex;justify-content:space-between;gap:16px;margin-top:18px;font-size:11px;color:var(--muted)}.hidden{display:none}
+    @media(max-width:750px){.nav{padding:16px 20px}.nav-label{display:none}main{padding:25px 18px}.heading{align-items:flex-start}h1{font-size:28px}.stats{gap:10px;grid-template-columns:1fr}.stat{padding:15px 20px}.value{font-size:23px}.toolbar{align-items:flex-start;flex-direction:column;padding:18px}.controls{width:100%}input{width:100%}.table-foot,.footer{flex-direction:column}.button{padding:11px 13px}.status{font-size:20px}}
+  </style>
+</head>
+<body>
+  <header class="top"><div class="nav"><div class="brand"><span class="mark">S</span> Sales workspace</div><span class="nav-label">SQL Server · Read-only dashboard</span></div></header>
+  <main>
+    <div class="heading"><div><div class="eyebrow">Data explorer</div><h1>Sales overview</h1><p>Explore the sales records from your database.</p></div><button class="button" id="refresh" type="button">↻ Refresh data</button></div>
+    <section class="stats" aria-label="Data summary">
+      <div class="stat"><span class="label">Rows loaded</span><span class="value">{{ rows|length if not error else '—' }}</span><span class="sub">Up to {{ limit }} records per request</span></div>
+      <div class="stat"><span class="label">Columns</span><span class="value">{{ columns|length if not error else '—' }}</span><span class="sub">From {{ table_name }}</span></div>
+      <div class="stat"><span class="label">Database status</span><span class="value status {{ 'bad' if error else '' }}">{{ 'Unavailable' if error else 'Connected' }}</span><span class="sub">{{ 'Check your connection settings' if error else 'Last refresh succeeded' }}</span></div>
+    </section>
+    {% if error %}<div class="error" role="alert"><strong>Unable to load sales</strong><p>{{ error }}</p></div>{% endif %}
+    <section class="panel" aria-label="Sales records">
+      <div class="toolbar"><div><h2>Sales records</h2><span class="table-name">{{ table_name }}</span></div><div class="controls"><input id="search" type="search" placeholder="Search loaded records…" aria-label="Search loaded records" {{ 'disabled' if error else '' }}><form id="limit-form" method="get"><label class="control-label" for="limit">Row limit </label><select name="limit" id="limit">{% for size in [25,100,250,1000] %}<option value="{{ size }}" {{ 'selected' if limit == size else '' }}>{{ size }}</option>{% endfor %}{% if limit not in [25,100,250,1000] %}<option value="{{ limit }}" selected>{{ limit }}</option>{% endif %}</select><noscript><button type="submit">Load</button></noscript></form></div></div>
+      {% if rows %}
+      <div class="table-scroll"><table><thead><tr>{% for col in columns %}<th scope="col">{{ col }}</th>{% endfor %}</tr></thead><tbody id="data-rows">{% for row in rows %}<tr>{% for cell in row %}<td>{% if cell is none %}<span class="null">NULL</span>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
+      <div class="empty hidden" id="no-matches"><h2>No matching records</h2><p>Try a different search within the loaded rows.</p></div>
+      {% else %}<div class="empty"><h2>{{ 'Data unavailable' if error else 'No sales yet' }}</h2><p>{{ 'Resolve the connection issue and refresh.' if error else 'Your query returned no rows.' }}</p></div>{% endif %}
+      <div class="table-foot"><span id="row-count" aria-live="polite">{{ rows|length }} loaded records</span><span>Search applies to loaded rows only</span></div>
+    </section>
+    <div class="footer"><span>Last retrieved: {{ updated or '—' }}</span><span>Refresh retrieves data from SQL Server</span></div>
+  </main>
+  <script>
+    document.querySelector('#refresh').addEventListener('click',function(){this.disabled=true;this.textContent='Loading…';window.location.reload();});
+    document.querySelector('#limit').addEventListener('change',()=>document.querySelector('#limit-form').submit());
+    const search=document.querySelector('#search');
+    const rows=Array.from(document.querySelectorAll('#data-rows tr'));
+    search.addEventListener('input',()=>{
+      const query=search.value.toLowerCase().trim();let count=0;
+      rows.forEach(row=>{const match=row.textContent.toLowerCase().includes(query);row.hidden=!match;if(match)count++;});
+      document.querySelector('#row-count').textContent=count+' of '+rows.length+' loaded records';
+      const empty=document.querySelector('#no-matches');if(empty)empty.classList.toggle('hidden',count!==0);
+    });
+  </script>
+</body>
+</html>
